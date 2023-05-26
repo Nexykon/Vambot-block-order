@@ -1,5 +1,5 @@
 //@version=5
-strategy("Breaker Blocks with Signals [LuxAlgo]", max_lines_count=500, max_boxes_count=500, max_labels_count=500, max_bars_back=3000, overlay=true)
+strategy("Breaker Blocks STRATEGIJA]", max_lines_count=500, max_boxes_count=500, max_labels_count=500, max_bars_back=3000, overlay=true)
 //------------------------------------------------------------------------------
 //Settings
 //-----------------------------------------------------------------------------{
@@ -27,7 +27,16 @@ R2a                   = input.float (    2     , title= ':'   , minval=.2, step=
 R1b                   = input.float (    1     , title='R:R 2', minval= 1, maxval=1, inline='RR2', group='TP'                                            )
 R2b                   = input.float (    3     , title= ':'   , minval=.2, step= .1, inline='RR2', group='TP'                                            )
 R1c                   = input.float (    1     , title='R:R 3', minval= 1, maxval=1, inline='RR3', group='TP'                                            )
-R2c                   = input.float (    4     , title= ':'   , minval=.2, step= .1, inline='RR3', group='TP'                                            )
+R2c                   = input.float (    4     , title= ':'   , minval=.2, step= .1, inline='RR3', group='TP' )
+
+sl_inp = input.float(6, title='Stop Loss %')/100
+tp_inp = input.float(2, title='Take Profit %')/100
+
+stop_levelLong = strategy.position_avg_price * (1 - sl_inp)
+take_levelLong = strategy.position_avg_price * (1 + tp_inp)
+
+stop_levelShort = strategy.position_avg_price * (1 + sl_inp)
+take_levelShort = strategy.position_avg_price * (1 - tp_inp)                                       
  
 //Colors
 cBBplusA              = input.color (color.rgb(12, 181, 26, 93)
@@ -397,7 +406,9 @@ draw(left, col) =>
                                 BB.TP3_line.set_xy1(n, E3)  
                                 BB.TP3_line.set_xy2(n + 20, E3) 
 
-                        signals.set(BBplus, true)                        
+                        signals.set(BBplus, true)
+                        if strategy.position_size == 0
+                            strategy.entry("LONG", strategy.long)                        
                         alert('+BB', alert.freq_once_per_bar_close)
                         BB.aLabels.unshift(createLab('u', low, cBBplusB.notransp(), _arrowup, size.large))
 
@@ -537,6 +548,8 @@ draw(left, col) =>
                                 BB.TP3_line.set_xy2(n + 20, E3) 
 
                         signals.set(BB_min, true)                        
+                        if strategy.position_size == 0
+                            strategy.entry("SHORT", strategy.short)
                         alert('-BB', alert.freq_once_per_bar_close)
                         BB.aLabels.unshift(createLab('d', high, cBB_minB.notransp(), _arrowdn, size.large))
                         
@@ -753,6 +766,13 @@ switch BB.dir
                 alert('Swing DN 2 break', alert.freq_once_per_bar_close)
                 if showBreaks
                     BB.aLabels.unshift(createLab('c', low, #c00000, _c))
+
+
+if (strategy.position_size > 0)
+	strategy.exit("TL1", "LONG", qty_percent = 100, stop=stop_levelLong,  limit=take_levelLong)
+
+if (strategy.position_size < 0)
+	strategy.exit("TS1", "SHORT", qty_percent = 100,  stop=stop_levelShort,  limit=take_levelShort)
 
 //-----------------------------------------------------------------------------}
 //Alerts
